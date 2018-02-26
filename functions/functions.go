@@ -6,6 +6,32 @@ import (
 	"time"
 )
 
+func ExtEuclidian(n1, n2, x1, y1, x2, y2 big.Int) big.Int {
+	var (
+		quo, //quotient
+		rem, //remaind
+		tmp1,
+		tmp2 big.Int
+	)
+	if n2.Cmp(big.NewInt(0)) != 0 {
+		quo.QuoRem(&n1, &n2, &rem)
+		//tmp1  = x1  - (x2*q)
+		tmp1.Mul(&x2, &quo).Sub(&x1, &tmp1)
+		tmp2.Mul(&y2, &quo).Sub(&y1, &tmp2)
+		//fmt.Println(tmp1)
+
+		if rem.Cmp(big.NewInt(0)) != 0 {
+			// fmt.Println(rem, "  ", quo, " ", tmp1, " ", tmp2)
+			return ExtEuclidian(n2, rem, x2, y2, tmp1, tmp2)
+		}
+		// fmt.Println(rem, "  ", quo, "--")
+		return x2
+
+	}
+	return *big.NewInt(1)
+
+}
+
 //MillerRabin functions  returns true if a number ,type big.Int, is probably prime
 // or false if it is not, a composite number
 func MillerRabin(n *big.Int, accuracy int) bool {
