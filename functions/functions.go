@@ -6,6 +6,28 @@ import (
 	"time"
 )
 
+
+//
+func Gauss(p big.Int) big.Int {
+	var (
+		q,tmp big.Int
+		two
+		g  big.NewInt(2)
+		mod
+	)
+	two = g =  big.NewInt(2)
+
+	q.Mul(p,two).
+			  Add(&q,big.NewInt(1))
+	
+	for tmp.Exp(g,p,q).Cmp(big.NewInt(1)) == 0 {
+		g.Add(g,big.NewInt(1))
+	}
+	
+
+}
+
+//
 func ExtEuclidian(n1, n2, x1, y1, x2, y2 big.Int) big.Int {
 	var (
 		quo, //quotient

@@ -83,7 +83,6 @@ func generateKeys() *big.Int {
 			fmt.Println("n:", n)
 			fmt.Println("e:", e)
 			fmt.Println("d:", d)
-
 		} else if str.Compare(os.Args[3], "elGamal") == 0 {
 			var (
 				b       [32]byte
@@ -102,6 +101,11 @@ func generateKeys() *big.Int {
 
 				}
 			}
+
+	//Publica: (p, g, c), onde p é primo, g é gerador de U(p) e c ∈ U(p).
+			fmt.Println("primo :",p)
+			fmt.Println("gerador :",g)
+			fmt.Println("c")
 
 		}
 	}
