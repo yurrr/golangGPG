@@ -5,14 +5,17 @@ package main
 //go run main.go genKey  crypt rsa
 //change import formats
 import (
-	"encoding/binary"
 	"fmt"
-	fcns "golangGPG/functions"
+	fn "golangGPG/functions"
 	"math/big"
 	"math/rand"
 	"os"
 	str "strings"
 	"time"
+)
+
+var (
+	two = big.NewInt(2)
 )
 
 func main() {
@@ -35,108 +38,86 @@ func main() {
 	*/
 	if str.Compare(os.Args[1], "genKey") == 0 {
 		fmt.Print(" /--* Starting generating Key *--\\ \n")
-		/*
-			fmt.Println("1234 - 1 0")
-			fmt.Println("54 - 0 1")
 
-			res := fcns.ExtEuclidian(*big.NewInt(1234), *big.NewInt(54), *big.NewInt(1), *big.NewInt(0), *big.NewInt(0), *big.NewInt(1))
-			fmt.Println(res.Add(&res, big.NewInt(1)))
-		*/
 		generateKeys()
-		//	fmt.Print(r)
 	}
 }
 
-func generateKeys() *big.Int {
+//takes 1 primes, returns p,g,c,a
+//func buildElGamal(p *big.Int) (big.Int, big.Int, big.Int, big.Int) {
 
+//}
+
+//takes 2 primes, returns n,e,d
+func buildRSA(p1, p2 *big.Int) (big.Int, big.Int, big.Int) {
+	n, e := genPubRSA(p1, p2)
+	_, d := genPrivRSA(p1, p2, &e)
+
+	return n, e, d
+}
+
+func buildElGamal(p1, p2 *big.Int) (big.Int, big.Int, big.Int) {
+	n, e := genPubRSA(p1, p2)
+	_, d := genPrivRSA(p1, p2, &e)
+
+	return n, e, d
+}
+func generateKeys() *big.Int {
 	var f big.Int
 
 	if str.Compare(os.Args[2], "crypt") == 0 {
+		// generate key-par (pub,priv) RSA
 		if str.Compare(os.Args[3], "rsa") == 0 {
-			// generate keys to rsa
-			var (
-				keys []big.Int
-				cont = 0
-			)
-			for cont < 2 {
-				var b [16]byte
-				rand.Read(b[:])
 
-				if int64(binary.LittleEndian.Uint64(b[:])) > 0 {
-					key := new(big.Int)
-					key.SetBytes(b[:])
-
-					isPrime := fcns.MillerRabin(key, 2)
-
-					if isPrime {
-						fmt.Println("atual1:", key)
-						keys = append(keys, *key)
-						cont++
-					}
-
-				}
-			}
-
-			n, e := genPubRSA(&keys[0], &keys[1])
-			_, d := genPrivRSA(&keys[0], &keys[1], &e)
-
-			fmt.Println("n:", n)
-			fmt.Println("e:", e)
-			fmt.Println("d:", d)
+			n, e, d := buildRSA(fn.GenPrime(16), fn.GenPrime(16))
+			fmt.Println("n:", &n)
+			fmt.Println("e:", &e)
+			fmt.Println("d:", &d)
 		} else if str.Compare(os.Args[3], "elGamal") == 0 {
-			var (
-				b       [32]byte
-				isPrime = false
-			)
-			for !isPrime {
-				rand.Read(b[:])
-				if int64(binary.LittleEndian.Uint64(b[:])) > 0 {
-					key := new(big.Int)
-					key.SetBytes(b[:])
-					isPrime = fcns.MillerRabin(key, 2)
 
-					if isPrime {
-						fmt.Println("atual1:", key)
-					}
+			p, g, c, a := buildElGamal(fn.GenPrime(32))
+			k := fn.GenPrime(32)
 
-				}
-			}
+			fmt.Println(k)
+			g := fn.GetPrimitiveRoot(k)
+			fmt.Println("gerado : ", g)
+			g.Exp(&g, two, k)
+			ao := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
+			var tmp444, x, h big.Int
+			tmp444.Sub(k, big.NewInt(1)).Quo(&tmp444, big.NewInt(2))
+			x.Rand(ao, &tmp444)
 
-	//Publica: (p, g, c), onde p é primo, g é gerador de U(p) e c ∈ U(p).
-			fmt.Println("primo :",p)
-			fmt.Println("gerador :",g)
-			fmt.Println("c")
-
+			h.Exp(&g, &x, k)
+			/*			fmt.Println("primo: ", k)
+						fmt.Println("gerador: ", &g)
+						fmt.Println("c: ", &h)
+			*/
 		}
 	}
 	return f.MulRange(1, 2)
 }
-func genPrivRSA(p, q, e *big.Int) (big.Int, big.Int) {
-	// /Privada: (n, d), onde n é como acima e ed ≡ 1 (mod φ(n)).
-	/*
-			fi = (p-1)*(q-1)
-		    print fi
-		    d = headerEuc(e,fi) % fi
-		    print d
-	*/
+func genPubElGamal(p *big.Int) (big.Int, big.Int) {
+	//Pública: (p, g, c), onde p é primo, g é gerador de U (p) e
+	//c ∈ U (p).
 
+}
+func genPrivRSA(p, q, e *big.Int) (big.Int, big.Int) {
 	var (
 		n, fi, p2, q2 big.Int
 	)
-	p2.Add(p, big.NewInt(-1))
-	q2.Add(q, big.NewInt(-1))
+	p2.Sub(p, big.NewInt(1))
+	q2.Sub(q, big.NewInt(1))
 	fi.Mul(&p2, &q2)
+	fmt.Println("fi:", &fi)
 
 	n.Mul(p, q)
-
-	d := fcns.ExtEuclidian(*e, fi, *big.NewInt(1), *big.NewInt(0), *big.NewInt(0), *big.NewInt(1))
-	d.Rem(&d, &fi)
-	fmt.Println("n : ", n)
-	fmt.Println("d : ", d)
+	fmt.Println("e2:", e)
+	// pra ser negativo o euclidiano gera um numero negativo
+	d := fn.ExtEuclidian(*e, fi, *big.NewInt(1), *big.NewInt(0), *big.NewInt(0), *big.NewInt(1))
+	fmt.Println("d1:::", &d)
+	d.Mod(&d, &fi)
+	fmt.Println("d:::", &d)
 	return n, d
-}
-func genPubGamal(p, q *big.Int) (big.Int, big.Int, big.Int) {
-
 }
 
 func genPubRSA(p, q *big.Int) (big.Int, big.Int) {
@@ -158,13 +139,7 @@ func genPubRSA(p, q *big.Int) (big.Int, big.Int) {
 		gc.GCD(nil, nil, &e, &fi)
 
 	}
-	fmt.Println("n : ", n)
-	fmt.Println("e : ", e)
 	return n, e
 	//d.Exp
 
 }
-
-//func digitalSign() {
-
-//}
