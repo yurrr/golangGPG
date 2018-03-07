@@ -1,9 +1,6 @@
 //Maintener : Yuri
-
 package main
 
-//go run main.go genKey  crypt rsa
-//change import formats
 import (
 	"fmt"
 	fn "golangGPG/functions"
@@ -19,87 +16,58 @@ var (
 )
 
 func main() {
-	// adsda.exe  genkey
-	// adsda.exe filename  sign/crypt if crypt= rsa/elgamal
-	//			0			1				2					3
-
-	// go run main.go try.txt sign
 	// @TODO: check qtde of args
-
-	// go run main.go genKey sign/crypt
+	// @TODO: change functions names
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	/*
-		if str.Compare(os.Args[2], "sign") == 0 {
-			fmt.Print(" /--* Starting digital assing *--\\ \n")
-			digitalSign()
-		}
-		//(args[2], "sign") == 0 {
-	*/
 	if str.Compare(os.Args[1], "genKey") == 0 {
 		fmt.Print(" /--* Starting generating Key *--\\ \n")
 
 		generateKeys()
 	}
 }
+func generateKeys() *big.Int {
+	var f big.Int
+	//fmt.Sprintf("%x", n) convert big to hex
+	if str.Compare(os.Args[2], "crypt") == 0 {
+		// generate key-par (pub,priv) RSA
+		if str.Compare(os.Args[3], "rsa") == 0 {
+			n, e, d := buildRSA(fn.GenPrime(16), fn.GenPrime(16))
 
-//takes 1 primes, returns p,g,c,a
-//func buildElGamal(p *big.Int) (big.Int, big.Int, big.Int, big.Int) {
+			fmt.Println("n:", &n)
+			fmt.Println("e:", &e)
+			fmt.Println("d:", &d)
+		} else if str.Compare(os.Args[3], "elGamal") == 0 {
+			p, g, c, a := buildElGamal(fn.GenPrime(32))
 
-//}
+			fmt.Println("primo: ", p)
+			fmt.Println("gerador: ", g)
+			fmt.Println("c: ", c)
+			fmt.Println("a: ", a)
 
-//takes 2 primes, returns n,e,d
+		}
+	} else if str.Compare(os.Args[2], "sign") == 0 {
+		pub, priv := digitalSign(fn.GenPrime(32))
+
+		fmt.Println("pub:  ", pub)
+		fmt.Println("priv:  ", priv)
+
+	}
+	return f.MulRange(1, 2)
+}
+func digitalSign(p *big.Int) (big.Int, big.Int) {
+	_, pub, priv := genElGamal(p) //ra stands for random number used to generate ...
+	return pub, priv
+}
 func buildRSA(p1, p2 *big.Int) (big.Int, big.Int, big.Int) {
 	n, e := genPubRSA(p1, p2)
 	_, d := genPrivRSA(p1, p2, &e)
 
 	return n, e, d
 }
-
-func buildElGamal(p1, p2 *big.Int) (big.Int, big.Int, big.Int) {
-	n, e := genPubRSA(p1, p2)
-	_, d := genPrivRSA(p1, p2, &e)
-
-	return n, e, d
-}
-func generateKeys() *big.Int {
-	var f big.Int
-
-	if str.Compare(os.Args[2], "crypt") == 0 {
-		// generate key-par (pub,priv) RSA
-		if str.Compare(os.Args[3], "rsa") == 0 {
-
-			n, e, d := buildRSA(fn.GenPrime(16), fn.GenPrime(16))
-			fmt.Println("n:", &n)
-			fmt.Println("e:", &e)
-			fmt.Println("d:", &d)
-		} else if str.Compare(os.Args[3], "elGamal") == 0 {
-
-			p, g, c, a := buildElGamal(fn.GenPrime(32))
-			k := fn.GenPrime(32)
-
-			fmt.Println(k)
-			g := fn.GetPrimitiveRoot(k)
-			fmt.Println("gerado : ", g)
-			g.Exp(&g, two, k)
-			ao := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
-			var tmp444, x, h big.Int
-			tmp444.Sub(k, big.NewInt(1)).Quo(&tmp444, big.NewInt(2))
-			x.Rand(ao, &tmp444)
-
-			h.Exp(&g, &x, k)
-			/*			fmt.Println("primo: ", k)
-						fmt.Println("gerador: ", &g)
-						fmt.Println("c: ", &h)
-			*/
-		}
-	}
-	return f.MulRange(1, 2)
-}
-func genPubElGamal(p *big.Int) (big.Int, big.Int) {
-	//Pública: (p, g, c), onde p é primo, g é gerador de U (p) e
-	//c ∈ U (p).
-
+func buildElGamal(p *big.Int) (big.Int, big.Int, big.Int, big.Int) {
+	g, c, ra := genElGamal(p) //ra stands for random number used to generate ...
+	return *p, g, c, ra
 }
 func genPrivRSA(p, q, e *big.Int) (big.Int, big.Int) {
 	var (
@@ -119,7 +87,6 @@ func genPrivRSA(p, q, e *big.Int) (big.Int, big.Int) {
 	fmt.Println("d:::", &d)
 	return n, d
 }
-
 func genPubRSA(p, q *big.Int) (big.Int, big.Int) {
 	var (
 		n, fi, p2, q2, e, gc big.Int
@@ -141,5 +108,19 @@ func genPubRSA(p, q *big.Int) (big.Int, big.Int) {
 	}
 	return n, e
 	//d.Exp
+
+}
+
+func genElGamal(p *big.Int) (big.Int, big.Int, big.Int) {
+	var tmp444, ra, c big.Int
+
+	g := fn.GetPrimitiveRoot(p)
+	g.Exp(&g, two, p)
+	ao := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
+	tmp444.Sub(p, big.NewInt(1)).Quo(&tmp444, big.NewInt(2))
+	ra.Rand(ao, &tmp444)
+	c.Exp(&g, &ra, p)
+
+	return g, c, ra
 
 }

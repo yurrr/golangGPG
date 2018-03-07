@@ -15,6 +15,8 @@ go run main.go genKey  crypt elGamal
 go run main.go genKey crypt rsa
 
 
+go run main.go genKey sign
+
 ... being written ...
 
 .
